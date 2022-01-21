@@ -1,6 +1,7 @@
 /*
 aplicacaion que guarda nuestros link favoritos
 echo en nodeJs, mysql, express, and others
+correrlo como npm run start
 */
 const express = require("express");
 const path = require("path");
@@ -10,9 +11,15 @@ const exphbs = require("express-handlebars");
 const {
   allowInsecurePrototypeAccess
 } = require("@handlebars/allow-prototype-access");
+const flash =require('connect-flash');
+const session =require('express-session');//alamcena los datos en la memria del servidor
+const MySQLStore =  require("express-mysql-session");
+const passport= require('passport');
 
+const {database} =require('./keys');
 //inicializaciones
 const app = express();
+require('./lib/passport');
 
 //settings
 app.set("port", process.env.PORT || 8080);
@@ -37,12 +44,27 @@ app.engine(
 app.set("view engine", ".hbs");
 
 //middlewares funciones que se ejecutan que un usuario hace una peticion al servidor
+app.use(session({
+  secret:'ucMysqlNodeSession',//como empezara a guardar la seccion
+  resave: false,
+  saveUninitialized: false,
+  store: new MySQLStore(database)   //con esta configuracion la secion se queda almacenada en la base de datos 
+}));
+app.use(flash());
 app.use(morgan("dev")); //muestra un mensaje en consola
 app.use(express.urlencoded({ extended: false })); //para aceptar los datos que nos envien desde el formulario
 app.use(express.json());
+app.use(passport.initialize());
+//guara la secion passport
+app.use(passport.session());
+
+
 
 //global variables
 app.use((req, res, next) => {
+
+  app.locals.success = req.flash('success');//con esto lo hacemos disponible en todas las vistas
+
   next();
 });
 
@@ -53,6 +75,7 @@ app.use("/links", require("./routes/links"));
 
 //Public Files
 app.use(express.static(path.join(__dirname, "public")));
+
 
 //Starting Server
 app.listen(app.get("port"), () => {

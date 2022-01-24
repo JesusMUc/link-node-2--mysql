@@ -64,6 +64,9 @@ app.use(passport.session());
 app.use((req, res, next) => {
 
   app.locals.success = req.flash('success');//con esto lo hacemos disponible en todas las vistas
+  app.locals.message = req.flash('message');//con esto lo hacemos disponible en todas las vistas
+  //para obtner los datos delusuario ya los tenemos en memorita y asi poder ocuparlos en todos lados vistas
+  app.locals.user = req.user;
 
   next();
 });

@@ -2,18 +2,23 @@ const express = require("express");
 const { route } = require(".");
 const router = express.Router();
 const pool = require("../database"); //hace referencia a la base de datos
+const {isLoggedIn} =require('../lib/auth');
 
-router.get("/add", (req, res) => {
+router.get("/add", isLoggedIn,(req, res) => {
   res.render("links/add");
 });
+
+
 //agregar un nuevo archivo 
-router.post("/add", async (req, res) => {
+router.post("/add", isLoggedIn,async (req, res) => {
   //console.log(req.body);
   const { title, url, description } = req.body;
   const newLink = {
     title,
     url,
-    description
+    description,
+    user_id: req.user.id
+
   };
   //gurdamos el nuevo link
   await pool.query("INSERT INTO links set ?", [newLink]);//como toma tiempo sera await
@@ -23,14 +28,14 @@ router.post("/add", async (req, res) => {
 });
 //todos los links de la base de datos
 //console.log(__dirname);
-router.get('/', async (req, res)=>{
-  const links =await pool.query('SELECT * FROM links');
+router.get('/', isLoggedIn, async (req, res)=>{
+  const links =await pool.query('SELECT * FROM links WHERE user_id = ?',[req.user.id]);
   console.log(links);
   //links= JSON.stringify(links)
   res.render('links/list', {links});
 
 });
-router.get('/delete/:id', async(req,res)=>{
+router.get('/delete/:id', isLoggedIn,async(req,res)=>{
   const {id} =req.params;
   await pool.query("DELETE FROM links WHERE ID= ?",[id]);
   //res.send("eliminado");
@@ -39,7 +44,7 @@ router.get('/delete/:id', async(req,res)=>{
 });
 
 
-router.get('/edit/:id', async(req,res)=>{
+router.get('/edit/:id', isLoggedIn  ,async(req,res)=>{
   const {id} =req.params;
   const links = await pool.query("SELECT * FROM links WHERE id = ?",[id]);
    //console.log(links[0]);
